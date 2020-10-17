@@ -1,15 +1,37 @@
 ---
 # tasks file for TmuxCsshInstall
-- name: Get primary group for {{UserName}}
-  shell: /usr/bin/id -gn "{{UserName}}"
-  register: PrimaryGroup
-
-- name: tmux-cssh for {{UserName}}
+# - name: Get primary group for {{UserName}}
+#   shell: /usr/bin/id -gn "{{UserName}}"
+#   register: PrimaryGroup
+- name: "create bin dir if it doesn't exist"
+  file:
+    path: "/home/{{item.UserName}}/bin"
+    owner:  "{{item.UserName}}"
+    group:  "{{item.PrimaryGroup| default('users')}}"
+    state:  directory
+  with_items: "{{Users}}"
+  loop_control:
+    label: "{{item.UserName}}"
+- name: tmux-cssh for {{item.UserName}}
   get_url:
     url: "{{TmuxCsshUrl}}"
-    dest: "~{{UserName}}/bin/tmux-cssh"
-    owner: "{{UserName}}"
-    group: "{{PrimaryGroup.stdout}}"
+    dest: "~{{item.UserName}}/bin/tmux-cssh"
+    owner: "{{item.UserName}}"
+    group: "{{item.PrimaryGroup| default('users')}}"
     mode: 0755
     validate_certs: no
     force: yes
+  with_items: "{{Users}}"
+  loop_control:
+    label: "{{item.UserName}}"
+  #   - name: Copy bashrc to the user home directory
+  # template:
+  #   src:  bashrc.j2
+  #   dest: "{{item.HomeDir | default('/home/' + item.UserName)}}/.bashrc"
+  #   owner:  "{{item.UserName}}"
+  #   group:  "{{item.PrimaryGroup| default('users')}}"
+  #   backup: no
+  #   mode: 0644
+  # with_items: "{{DotFiles}}"
+  # loop_control:
+  #   label: "{{item.UserName}}"  
